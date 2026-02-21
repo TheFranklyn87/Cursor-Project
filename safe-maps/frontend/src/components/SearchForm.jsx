@@ -71,6 +71,11 @@ function AutocompleteInput({ label, value, onChange, placeholder, geocode, onSel
     );
 }
 
+function isNightTime() {
+    const h = new Date().getHours();
+    return h >= 20 || h < 6;
+}
+
 export function SearchForm({
     onSearch,
     loading,
@@ -80,12 +85,15 @@ export function SearchForm({
     setToText,
     clickMode,
     setClickMode,
+    theme,
+    onToggleTheme,
 }) {
     const { geocode } = useRoute();
     const { recent, addRecent, clearRecent } = useRecentSearches();
     const { places, addPlace, removePlace } = useSavedPlaces();
     const { getLocation, locating, locationError } = useCurrentLocation();
-    const [night, setNight] = useState(false);
+    const [nightAutoDetected] = useState(isNightTime);
+    const [night, setNight] = useState(isNightTime);
     const [fromCoord, setFromCoord] = useState(null);
     const [toCoord, setToCoord] = useState(null);
     const [isGeocoding, setIsGeocoding] = useState(false);
@@ -202,7 +210,18 @@ export function SearchForm({
 
     return (
         <div className="search-form">
-            <h2>Safe Maps</h2>
+            <div className="sidebar-header">
+                <h2>Safe Maps</h2>
+                <button
+                    type="button"
+                    className="theme-toggle"
+                    onClick={onToggleTheme}
+                    title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+                    aria-label="Toggle theme"
+                >
+                    {theme === 'dark' ? '☀️' : '🌙'}
+                </button>
+            </div>
             <p className="tagline">Find the safest walking route in Vancouver</p>
 
             <form onSubmit={handleSubmit}>
@@ -274,6 +293,9 @@ export function SearchForm({
                             onChange={(e) => setNight(e.target.checked)}
                         />
                         Walking at night (prioritize lit routes)
+                        {nightAutoDetected && (
+                            <span className="night-auto-hint">auto-detected</span>
+                        )}
                     </label>
                 </div>
                 <button type="submit" disabled={loading || isGeocoding}>

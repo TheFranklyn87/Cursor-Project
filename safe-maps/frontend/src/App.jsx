@@ -4,6 +4,7 @@ import { RouteCard } from './components/RouteCard';
 import { MapView } from './components/MapView';
 import { ShareButton } from './components/ShareButton';
 import { useRoute } from './hooks/useRoute';
+import { useTheme } from './hooks/useTheme';
 import './App.css';
 
 // Parse ?from=lat,lng&to=lat,lng&night=1&fl=label&tl=label from URL
@@ -39,6 +40,7 @@ function clearUrlParams() {
 
 function App() {
   const { routes, loading, error, from, to, fetchRoutes, clear } = useRoute();
+  const { theme, toggleTheme } = useTheme();
   const [routeMode, setRouteMode] = useState('safest');
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [clickMode, setClickMode] = useState(null);
@@ -100,6 +102,8 @@ function App() {
           setToText={setToText}
           clickMode={clickMode}
           setClickMode={setClickMode}
+          theme={theme}
+          onToggleTheme={toggleTheme}
         />
         {error && <div className="error">{error}</div>}
         {routes?.routes && optionIndicesSafe.length > 0 && (
