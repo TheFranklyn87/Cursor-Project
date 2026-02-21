@@ -183,6 +183,65 @@
     border-top: 1px solid #334155;
 }
 
+.route-list-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.25rem;
+}
+
+.route-list-header h3 {
+    font-size: 0.95rem;
+    margin: 0;
+}
+
+.route-mode-switcher {
+    display: flex;
+    background: #1e293b;
+    border-radius: 6px;
+    padding: 2px;
+    border: 1px solid #334155;
+}
+
+.route-mode-switcher button {
+    padding: 0.35rem 0.75rem;
+    font-size: 0.8rem;
+    font-weight: 500;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    color: #94a3b8;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+
+.route-mode-switcher button:hover {
+    color: #e2e8f0;
+}
+
+.route-mode-switcher button.active {
+    background: #334155;
+    color: #e2e8f0;
+}
+
+.route-mode-switcher button:first-child.active {
+    background: #22c55e;
+    color: #0f172a;
+}
+
+.route-mode-switcher button:last-child.active {
+    background: #3b82f6;
+    color: #fff;
+}
+
+.route-mode-hint {
+    font-size: 0.75rem;
+    color: #94a3b8;
+    margin: -0.25rem 0 0.75rem;
+}
+
 .route-list h3 {
     font-size: 0.95rem;
     margin-bottom: 0.75rem;
@@ -222,10 +281,23 @@
     font-size: 0.65rem;
     font-weight: 700;
     text-transform: uppercase;
-    background: #22c55e;
-    color: #0f172a;
     padding: 0.15rem 0.4rem;
     border-radius: 4px;
+}
+
+.badge-safest {
+    background: #22c55e;
+    color: #0f172a;
+}
+
+.badge-fastest {
+    background: #3b82f6;
+    color: #fff;
+}
+
+.badge-alt {
+    background: #64748b;
+    color: #e2e8f0;
 }
 
 .route-label {

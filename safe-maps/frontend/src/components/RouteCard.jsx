@@ -1,4 +1,4 @@
-export function RouteCard({ route, index, isRecommended, isSelected, onSelect }) {
+export function RouteCard({ route, routeIdx, listPosition, routeMode, isSafest, isFastest, isRecommended, isSelected, onSelect }) {
   const durationMin = Math.round(route.duration / 60);
   const distanceKm = (route.distance / 1000).toFixed(2);
   const crimeScore = route.crimeScore ?? 50;
@@ -9,16 +9,19 @@ export function RouteCard({ route, index, isRecommended, isSelected, onSelect })
   if (lightingScore >= 60) tags.push('Well-lit');
   else if (lightingScore < 40) tags.push('Less lit');
 
+  const mainLabel = routeMode === 'safest' ? 'Safest' : 'Fastest';
+  const optionLabel = listPosition === 0 ? mainLabel : `Alternative ${listPosition}`;
+
   return (
     <div
       className={`route-card ${isSelected ? 'selected' : ''} ${isRecommended ? 'recommended' : ''}`}
-      onClick={() => onSelect(index)}
+      onClick={() => onSelect(listPosition)}
     >
       <div className="route-header">
-        {isRecommended && <span className="badge">Safest</span>}
-        <span className="route-label">
-          {index === 0 ? 'Fastest' : `Alternative ${index}`}
-        </span>
+        {routeMode === 'safest' && listPosition === 0 && <span className="badge badge-safest">Safest</span>}
+        {routeMode === 'fastest' && listPosition === 0 && <span className="badge badge-fastest">Fastest</span>}
+        {listPosition > 0 && <span className="badge badge-alt">Alt {listPosition}</span>}
+        <span className="route-label">{optionLabel}</span>
       </div>
       <div className="route-stats">
         <span>{durationMin} min</span>

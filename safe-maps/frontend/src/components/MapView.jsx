@@ -1,6 +1,5 @@
 import { useEffect } from 'react';
-import { MapContainer, TileLayer, Polyline, Marker, useMap, useMapEvents, CircleMarker, Tooltip } from 'react-leaflet';
-import L from 'leaflet';
+import { MapContainer, TileLayer, Polyline, useMap, useMapEvents, CircleMarker, Tooltip } from 'react-leaflet';
 
 import 'leaflet/dist/leaflet.css';
 
@@ -136,44 +135,60 @@ function RoutePolylines({ routes, selectedIndex }) {
     );
 }
 
-const pinIcon = L.divIcon({
-    className: 'marker-pin',
-    html: '<div class="pin-inner"></div>',
-    iconSize: [24, 24],
-    iconAnchor: [12, 24],
-});
-
-const pinIconTo = L.divIcon({
-    className: 'marker-pin marker-pin-to',
-    html: '<div class="pin-inner"></div>',
-    iconSize: [24, 24],
-    iconAnchor: [12, 24],
-});
+// Origin/destination as circle markers fixed to map coordinates (stay in place when zooming/panning)
+const ORIGIN_RADIUS = 12;
+const DEST_RADIUS = 12;
 
 export function MapView({ routes, selectedIndex, from, to, clickMode, onMapClick }) {
-    return (
-        <div className="map-container">
-            {clickMode && (
-                <div className="map-click-hint">
-                    Click on map to set {clickMode === 'from' ? 'origin' : 'destination'}
-                </div>
-            )}
-            <MapContainer
-                center={VANCOUVER_CENTER}
-                zoom={14}
-                className="map"
-                scrollWheelZoom={true}
-            >
-                <TileLayer
-                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                />
-                <MapClickHandler clickMode={clickMode} onMapClick={onMapClick} />
-                <MapUpdater routes={routes} from={from} to={to} />
-                <RoutePolylines routes={routes} selectedIndex={selectedIndex} />
-                {from && <Marker position={[from.lat, from.lng]} icon={pinIcon} />}
-                {to && <Marker position={[to.lat, to.lng]} icon={pinIconTo} />}
-            </MapContainer>
+  return (
+    <div className="map-container">
+      {clickMode && (
+        <div className="map-click-hint">
+          Click on map to set {clickMode === 'from' ? 'origin' : 'destination'}
+        </div>
+      )}
+      <MapContainer
+        center={VANCOUVER_CENTER}
+        zoom={14}
+        className="map"
+        scrollWheelZoom={true}
+      >
+        <TileLayer
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        />
+        <MapClickHandler clickMode={clickMode} onMapClick={onMapClick} />
+        <MapUpdater routes={routes} from={from} to={to} />
+        <RoutePolylines routes={routes} selectedIndex={selectedIndex} />
+        {from && (
+          <CircleMarker
+            center={[from.lat, from.lng]}
+            radius={ORIGIN_RADIUS}
+            pathOptions={{
+              color: '#1e40af',
+              fillColor: '#3b82f6',
+              fillOpacity: 1,
+              weight: 3,
+            }}
+          >
+            <Tooltip permanent={false} direction="top">Origin</Tooltip>
+          </CircleMarker>
+        )}
+        {to && (
+          <CircleMarker
+            center={[to.lat, to.lng]}
+            radius={DEST_RADIUS}
+            pathOptions={{
+              color: '#991b1b',
+              fillColor: '#ef4444',
+              fillOpacity: 1,
+              weight: 3,
+            }}
+          >
+            <Tooltip permanent={false} direction="top">Destination</Tooltip>
+          </CircleMarker>
+        )}
+      </MapContainer>
             <div className="map-legend">
                 <div className="legend-item"><span className="color-box safe"></span> Safe</div>
                 <div className="legend-item"><span className="color-box moderate"></span> Moderate</div>

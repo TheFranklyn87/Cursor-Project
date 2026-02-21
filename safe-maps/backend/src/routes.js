@@ -51,18 +51,26 @@ export async function handleRouteRequest(req, res) {
             };
         });
 
-        let recommended = 0;
-        let bestScore = scored[0].safetyScore;
-        for (let i = 1; i < scored.length; i++) {
-            if (scored[i].safetyScore > bestScore) {
-                bestScore = scored[i].safetyScore;
-                recommended = i;
-            }
-        }
+        // Safest: top 3 by safety (safest first; can be longer)
+        const safestOptions = scored
+            .map((r, i) => ({ i, safetyScore: r.safetyScore }))
+            .sort((a, b) => b.safetyScore - a.safetyScore)
+            .slice(0, 3)
+            .map((x) => x.i);
+
+        // Fastest: top 3 by duration (fastest first; safety ignored)
+        const fastestOptions = scored
+            .map((r, i) => ({ i, duration: r.duration }))
+            .sort((a, b) => a.duration - b.duration)
+            .slice(0, 3)
+            .map((x) => x.i);
 
         res.json({
             routes: scored,
-            recommended,
+            recommended: safestOptions[0] ?? 0,
+            fastest: fastestOptions[0] ?? 0,
+            safestOptions,
+            fastestOptions,
         });
     } catch (err) {
         console.error('Route error:', err);
