@@ -1,0 +1,8 @@
+{
+    "appId": "com.safemaps.app",
+    "appName": "Safe Maps",
+    "webDir": "dist",
+    "server": {
+        "cleartext": true
+    }
+}
