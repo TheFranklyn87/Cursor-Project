@@ -69,6 +69,27 @@
   flex: 1;
 }
 
+.input-actions {
+  display: flex;
+  gap: 0.35rem;
+  align-items: center;
+}
+
+.save-place-btn {
+  padding: 0.5rem 0.5rem;
+  background: transparent;
+  color: #eab308;
+  border: 1px solid #475569;
+  border-radius: 6px;
+  font-size: 1rem;
+  cursor: pointer;
+  line-height: 1;
+}
+.save-place-btn:hover {
+  background: #334155;
+  color: #facc15;
+}
+
 .map-click-btn {
   padding: 0.5rem 0.75rem;
   background: #334155;
@@ -130,6 +151,102 @@
   color: #fcd34d;
   border-radius: 6px;
   font-size: 0.8rem;
+}
+
+.section {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #334155;
+}
+
+.section-title {
+    font-size: 0.8rem;
+    color: #94a3b8;
+    margin: 0 0 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+.clear-recent-btn {
+    background: none;
+    border: none;
+    color: #64748b;
+    font-size: 0.75rem;
+    cursor: pointer;
+    padding: 0.2rem 0.4rem;
+}
+.clear-recent-btn:hover {
+    color: #94a3b8;
+}
+
+.saved-places-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.saved-place-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.4rem 0.5rem;
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 4px;
+    margin-bottom: 0.4rem;
+}
+
+.saved-place-label {
+    font-size: 0.85rem;
+    color: #e2e8f0;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.saved-place-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    flex-shrink: 0;
+}
+
+.saved-place-btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.7rem;
+    background: #334155;
+    color: #94a3b8;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+.saved-place-btn:hover {
+    background: #475569;
+    color: #e2e8f0;
+}
+
+.saved-place-remove {
+    padding: 0 0.35rem;
+    font-size: 1.1rem;
+    line-height: 1;
+    background: transparent;
+    color: #64748b;
+    border: none;
+    cursor: pointer;
+    border-radius: 2px;
+}
+.saved-place-remove:hover {
+    color: #ef4444;
+    background: rgba(239, 68, 68, 0.15);
+}
+
+.recent-btn {
+    font-size: 0.78rem;
 }
 
 .presets {

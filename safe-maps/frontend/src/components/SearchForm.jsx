@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useRoute } from '../hooks/useRoute';
+import { useRecentSearches, useSavedPlaces } from '../hooks/useStorage';
 
-const API_BASE = import.meta.env.VITE_API_URL || '/api';
 const COORD_REGEX = /^(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)$/;
 
 const PRESETS = [
@@ -81,6 +81,8 @@ export function SearchForm({
     setClickMode,
 }) {
     const { geocode } = useRoute();
+    const { recent, addRecent, clearRecent } = useRecentSearches();
+    const { places, addPlace, removePlace } = useSavedPlaces();
     const [night, setNight] = useState(false);
     const [fromCoord, setFromCoord] = useState(null);
     const [toCoord, setToCoord] = useState(null);
@@ -108,7 +110,40 @@ export function SearchForm({
         setToText(toLabel);
         setFromCoord({ ...preset.from, label: fromLabel });
         setToCoord({ ...preset.to, label: toLabel });
+        addRecent({ fromLabel, toLabel, from: preset.from, to: preset.to, night });
         onSearch(preset.from, preset.to, night);
+    };
+
+    const handleRecentClick = (item) => {
+        setValidationError(null);
+        setFromText(item.fromLabel || `${item.from.lat.toFixed(4)}, ${item.from.lng.toFixed(4)}`);
+        setToText(item.toLabel || `${item.to.lat.toFixed(4)}, ${item.to.lng.toFixed(4)}`);
+        setFromCoord({ ...item.from, label: item.fromLabel });
+        setToCoord({ ...item.to, label: item.toLabel });
+        setNight(item.night ?? false);
+        onSearch(item.from, item.to, item.night ?? false);
+    };
+
+    const setSavedAsFrom = (place) => {
+        setFromText(place.label);
+        setFromCoord({ lat: place.lat, lng: place.lng, label: place.label });
+    };
+
+    const setSavedAsTo = (place) => {
+        setToText(place.label);
+        setToCoord({ lat: place.lat, lng: place.lng, label: place.label });
+    };
+
+    const handleSaveFromAsPlace = () => {
+        if (!fromCoord) return;
+        const label = window.prompt('Name this place', fromText || 'Home');
+        if (label?.trim()) addPlace({ label: label.trim(), lat: fromCoord.lat, lng: fromCoord.lng });
+    };
+
+    const handleSaveToAsPlace = () => {
+        if (!toCoord) return;
+        const label = window.prompt('Name this place', toText || 'Work');
+        if (label?.trim()) addPlace({ label: label.trim(), lat: toCoord.lat, lng: toCoord.lng });
     };
 
     const handleSubmit = async (e) => {
@@ -145,6 +180,9 @@ export function SearchForm({
         }
 
         if (finalFrom && finalTo) {
+            const fromLabel = fromText?.trim() || `${finalFrom.lat.toFixed(4)}, ${finalFrom.lng.toFixed(4)}`;
+            const toLabel = toText?.trim() || `${finalTo.lat.toFixed(4)}, ${finalTo.lng.toFixed(4)}`;
+            addRecent({ fromLabel, toLabel, from: finalFrom, to: finalTo, night });
             onSearch(finalFrom, finalTo, night);
         } else {
             setValidationError('Please select locations from the dropdown, enter coordinates, or click the map.');
@@ -165,14 +203,21 @@ export function SearchForm({
                     geocode={geocode}
                     onSelect={setFromCoord}
                     actionButton={
-                        <button
-                            type="button"
-                            className={`map-click-btn ${clickMode === 'from' ? 'active' : ''}`}
-                            onClick={() => setClickMode(clickMode === 'from' ? null : 'from')}
-                            title="Click on map to set"
-                        >
-                            Map
-                        </button>
+                        <div className="input-actions">
+                            {fromCoord && (
+                                <button type="button" className="save-place-btn" onClick={handleSaveFromAsPlace} title="Save as place">
+                                    ★
+                                </button>
+                            )}
+                            <button
+                                type="button"
+                                className={`map-click-btn ${clickMode === 'from' ? 'active' : ''}`}
+                                onClick={() => setClickMode(clickMode === 'from' ? null : 'from')}
+                                title="Click on map to set"
+                            >
+                                Map
+                            </button>
+                        </div>
                     }
                 />
                 <AutocompleteInput
@@ -183,14 +228,21 @@ export function SearchForm({
                     geocode={geocode}
                     onSelect={setToCoord}
                     actionButton={
-                        <button
-                            type="button"
-                            className={`map-click-btn ${clickMode === 'to' ? 'active' : ''}`}
-                            onClick={() => setClickMode(clickMode === 'to' ? null : 'to')}
-                            title="Click on map to set"
-                        >
-                            Map
-                        </button>
+                        <div className="input-actions">
+                            {toCoord && (
+                                <button type="button" className="save-place-btn" onClick={handleSaveToAsPlace} title="Save as place">
+                                    ★
+                                </button>
+                            )}
+                            <button
+                                type="button"
+                                className={`map-click-btn ${clickMode === 'to' ? 'active' : ''}`}
+                                onClick={() => setClickMode(clickMode === 'to' ? null : 'to')}
+                                title="Click on map to set"
+                            >
+                                Map
+                            </button>
+                        </div>
                     }
                 />
                 <div className="form-group checkbox">
@@ -210,6 +262,44 @@ export function SearchForm({
                     <p className="validation-error" role="alert">{validationError}</p>
                 )}
             </form>
+
+            {places.length > 0 && (
+                <div className="saved-places section">
+                    <p className="section-title">Saved places</p>
+                    <ul className="saved-places-list">
+                        {places.map((place) => (
+                            <li key={place.id} className="saved-place-item">
+                                <span className="saved-place-label">{place.label}</span>
+                                <div className="saved-place-actions">
+                                    <button type="button" className="saved-place-btn" onClick={() => setSavedAsFrom(place)}>From</button>
+                                    <button type="button" className="saved-place-btn" onClick={() => setSavedAsTo(place)}>To</button>
+                                    <button type="button" className="saved-place-remove" onClick={() => removePlace(place.id)} title="Remove" aria-label="Remove place">×</button>
+                                </div>
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+            )}
+
+            {recent.length > 0 && (
+                <div className="recent-searches section">
+                    <p className="section-title">
+                        Recent
+                        <button type="button" className="clear-recent-btn" onClick={clearRecent}>Clear</button>
+                    </p>
+                    {recent.map((item, idx) => (
+                        <button
+                            key={item.id ?? idx}
+                            type="button"
+                            className="preset-btn recent-btn"
+                            onClick={() => handleRecentClick(item)}
+                            disabled={loading}
+                        >
+                            {item.fromLabel} → {item.toLabel}
+                        </button>
+                    ))}
+                </div>
+            )}
 
             <div className="presets">
                 <p>Quick demo:</p>
