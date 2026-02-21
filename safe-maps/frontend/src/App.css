@@ -75,6 +75,33 @@
   align-items: center;
 }
 
+.locate-btn {
+  padding: 0.5rem 0.55rem;
+  background: transparent;
+  color: #38bdf8;
+  border: 1px solid #475569;
+  border-radius: 6px;
+  font-size: 1.1rem;
+  cursor: pointer;
+  line-height: 1;
+  transition: background 0.15s, color 0.15s;
+}
+.locate-btn:hover:not(:disabled) {
+  background: #0f2d45;
+  color: #7dd3fc;
+}
+.locate-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.locate-btn.locating {
+  animation: pulse 1s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
 .save-place-btn {
   padding: 0.5rem 0.5rem;
   background: transparent;

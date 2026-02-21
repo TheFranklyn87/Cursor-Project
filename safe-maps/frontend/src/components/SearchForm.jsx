@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useRoute } from '../hooks/useRoute';
 import { useRecentSearches, useSavedPlaces } from '../hooks/useStorage';
+import { useCurrentLocation } from '../hooks/useCurrentLocation';
 
 const COORD_REGEX = /^(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)$/;
 
@@ -83,11 +84,21 @@ export function SearchForm({
     const { geocode } = useRoute();
     const { recent, addRecent, clearRecent } = useRecentSearches();
     const { places, addPlace, removePlace } = useSavedPlaces();
+    const { getLocation, locating, locationError } = useCurrentLocation();
     const [night, setNight] = useState(false);
     const [fromCoord, setFromCoord] = useState(null);
     const [toCoord, setToCoord] = useState(null);
     const [isGeocoding, setIsGeocoding] = useState(false);
     const [validationError, setValidationError] = useState(null);
+
+    const handleUseCurrentLocation = async () => {
+        setValidationError(null);
+        const result = await getLocation(geocode);
+        if (result) {
+            setFromText(result.label);
+            setFromCoord(result);
+        }
+    };
 
     // Reset coords if text changes significantly (and isn't a coordinate)
     useEffect(() => {
@@ -204,6 +215,16 @@ export function SearchForm({
                     onSelect={setFromCoord}
                     actionButton={
                         <div className="input-actions">
+                            <button
+                                type="button"
+                                className={`locate-btn ${locating ? 'locating' : ''}`}
+                                onClick={handleUseCurrentLocation}
+                                disabled={locating}
+                                title="Use my current location"
+                                aria-label="Use current location"
+                            >
+                                {locating ? '…' : '⊕'}
+                            </button>
                             {fromCoord && (
                                 <button type="button" className="save-place-btn" onClick={handleSaveFromAsPlace} title="Save as place">
                                     ★
@@ -260,6 +281,9 @@ export function SearchForm({
                 </button>
                 {validationError && (
                     <p className="validation-error" role="alert">{validationError}</p>
+                )}
+                {locationError && (
+                    <p className="validation-error" role="alert">{locationError}</p>
                 )}
             </form>
 
