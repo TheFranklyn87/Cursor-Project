@@ -28,25 +28,23 @@ function MapUpdater({ routes, from, to }) {
 }
 
 function RoutePolylines({ routes, selectedIndex }) {
-  if (!routes?.routes) return null;
+  if (!routes?.routes?.length) return null;
 
-  return routes.routes.map((route, i) => {
-    const coords = route.geometry?.coordinates?.map((c) => [c[1], c[0]]) || [];
-    const isRecommended = i === routes.recommended;
-    const isSelected = selectedIndex === i;
-    const isHighlight = isRecommended || isSelected;
-    const color = isHighlight ? SAFE_COLOR : NORMAL_COLOR;
-    const weight = isHighlight ? 5 : 3;
-    const opacity = isSelected ? 1 : isHighlight ? 0.9 : 0.5;
+  // Only show the currently selected route so the previous one doesn't stay visible
+  const route = routes.routes[selectedIndex];
+  if (!route) return null;
 
-    return (
-      <Polyline
-        key={i}
-        positions={coords}
-        pathOptions={{ color, weight, opacity }}
-      />
-    );
-  });
+  const coords = route.geometry?.coordinates?.map((c) => [c[1], c[0]]) || [];
+  const isRecommended = selectedIndex === routes.recommended;
+  const color = isRecommended ? SAFE_COLOR : NORMAL_COLOR;
+
+  return (
+    <Polyline
+      key={selectedIndex}
+      positions={coords}
+      pathOptions={{ color, weight: 5, opacity: 1 }}
+    />
+  );
 }
 
 const pinIcon = L.divIcon({
