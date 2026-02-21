@@ -258,7 +258,6 @@ export function SearchForm({
                     onChange={setFromText}
                     geocode={geocode}
                     onSelect={setFromCoord}
-                    onFocus={() => setIsMobileExpanded && setIsMobileExpanded(true)}
                     actionButton={
                         <div className="input-actions">
                             <button
@@ -297,7 +296,6 @@ export function SearchForm({
                     onChange={setToText}
                     geocode={geocode}
                     onSelect={setToCoord}
-                    onFocus={() => setIsMobileExpanded && setIsMobileExpanded(true)}
                     actionButton={
                         <div className="input-actions">
                             {toCoord && (
