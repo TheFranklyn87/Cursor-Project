@@ -87,12 +87,10 @@ export async function handleGeocodeRequest(req, res) {
     }
     try {
         const result = await geocode(q);
-        if (!result) {
+        if (!Array.isArray(result) || result.length === 0) {
             return res.status(404).json({ error: 'Address not found' });
         }
-        // Handle both single result and array of results if needed
-        // The suggest endpoint in frontend expects an array
-        res.json(Array.isArray(result) ? result : [result]);
+        res.json(result);
     } catch (err) {
         console.error('Geocode error:', err);
         res.status(500).json({ error: err.message || 'Geocoding failed' });
