@@ -1,6 +1,9 @@
 import { useState, useCallback } from 'react';
 
-const API_BASE = import.meta.env.VITE_API_URL || '/api';
+const isCapacitor = typeof window !== 'undefined' && window.location.protocol === 'capacitor:';
+// Use the exact IP address of the machine running the backend container
+const defaultApi = isCapacitor ? 'http://10.43.48.80:3001/api' : '/api';
+const API_BASE = import.meta.env.VITE_API_URL || defaultApi;
 
 export function useRoute() {
     const [routes, setRoutes] = useState(null);
@@ -33,7 +36,7 @@ export function useRoute() {
             const fromStr = `${fromCoord.lat},${fromCoord.lng}`;
             const toStr = `${toCoord.lat},${toCoord.lng}`;
             const res = await fetch(
-                `${API_BASE}/route?from=${encodeURIComponent(fromStr)}&to=${encodeURIComponent(toStr)}&night=${night}`
+                `${API_BASE}/route?from=${encodeURIComponent(fromStr)}&to=${encodeURIComponent(toStr)}&night=${night}&t=${Date.now()}`
             );
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Route request failed');

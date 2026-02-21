@@ -11,7 +11,7 @@ const PRESETS = [
     { id: 'hastings-mountpleasant', label: 'East Hastings → Mount Pleasant', from: { lat: 49.2827, lng: -123.1045 }, to: { lat: 49.2722, lng: -123.1048 } },
 ];
 
-function AutocompleteInput({ label, value, onChange, placeholder, geocode, onSelect, actionButton }) {
+function AutocompleteInput({ label, value, onChange, placeholder, geocode, onSelect, actionButton, onFocus }) {
     const [suggestions, setSuggestions] = useState([]);
     const [showDropdown, setShowDropdown] = useState(false);
     const debounceTimer = useRef(null);
@@ -54,7 +54,10 @@ function AutocompleteInput({ label, value, onChange, placeholder, geocode, onSel
                     value={value}
                     onChange={handleInputChange}
                     onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
-                    onFocus={() => suggestions.length > 0 && setShowDropdown(true)}
+                    onFocus={() => {
+                        if (onFocus) onFocus();
+                        if (suggestions.length > 0) setShowDropdown(true);
+                    }}
                 />
                 {actionButton}
             </div>
@@ -87,6 +90,8 @@ export function SearchForm({
     setClickMode,
     theme,
     onToggleTheme,
+    isMobileExpanded,
+    setIsMobileExpanded
 }) {
     const { geocode } = useRoute();
     const { recent, addRecent, clearRecent } = useRecentSearches();
@@ -209,20 +214,41 @@ export function SearchForm({
     };
 
     return (
-        <div className="search-form">
-            <div className="sidebar-header">
-                <h2>Safe Maps</h2>
-                <button
-                    type="button"
-                    className="theme-toggle"
-                    onClick={onToggleTheme}
-                    title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-                    aria-label="Toggle theme"
-                >
-                    {theme === 'dark' ? '☀️' : '🌙'}
-                </button>
-            </div>
-            <p className="tagline">Find the safest walking route in Vancouver</p>
+        <div className={`search-form ${isMobileExpanded ? 'expanded-mobile-mode' : ''}`}>
+            {isMobileExpanded && (
+                <div className="mobile-search-header">
+                    <button type="button" className="close-search-btn" onClick={() => setIsMobileExpanded(false)}>
+                        ✕ Close Search
+                    </button>
+                    <button
+                        type="button"
+                        className="theme-toggle"
+                        onClick={onToggleTheme}
+                        title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+                        aria-label="Toggle theme"
+                    >
+                        {theme === 'dark' ? '☀️' : '🌙'}
+                    </button>
+                </div>
+            )}
+
+            {!isMobileExpanded && (
+                <>
+                    <div className="sidebar-header">
+                        <h2>Safe Maps</h2>
+                        <button
+                            type="button"
+                            className="theme-toggle"
+                            onClick={onToggleTheme}
+                            title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+                            aria-label="Toggle theme"
+                        >
+                            {theme === 'dark' ? '☀️' : '🌙'}
+                        </button>
+                    </div>
+                    <p className="tagline">Find the safest walking route in Vancouver</p>
+                </>
+            )}
 
             <form onSubmit={handleSubmit}>
                 <AutocompleteInput
@@ -232,6 +258,7 @@ export function SearchForm({
                     onChange={setFromText}
                     geocode={geocode}
                     onSelect={setFromCoord}
+                    onFocus={() => setIsMobileExpanded && setIsMobileExpanded(true)}
                     actionButton={
                         <div className="input-actions">
                             <button
@@ -252,7 +279,10 @@ export function SearchForm({
                             <button
                                 type="button"
                                 className={`map-click-btn ${clickMode === 'from' ? 'active' : ''}`}
-                                onClick={() => setClickMode(clickMode === 'from' ? null : 'from')}
+                                onClick={() => {
+                                    setClickMode(clickMode === 'from' ? null : 'from');
+                                    setIsMobileExpanded && setIsMobileExpanded(false);
+                                }}
                                 title="Click on map to set"
                             >
                                 Map
@@ -267,6 +297,7 @@ export function SearchForm({
                     onChange={setToText}
                     geocode={geocode}
                     onSelect={setToCoord}
+                    onFocus={() => setIsMobileExpanded && setIsMobileExpanded(true)}
                     actionButton={
                         <div className="input-actions">
                             {toCoord && (
@@ -277,7 +308,10 @@ export function SearchForm({
                             <button
                                 type="button"
                                 className={`map-click-btn ${clickMode === 'to' ? 'active' : ''}`}
-                                onClick={() => setClickMode(clickMode === 'to' ? null : 'to')}
+                                onClick={() => {
+                                    setClickMode(clickMode === 'to' ? null : 'to');
+                                    setIsMobileExpanded && setIsMobileExpanded(false);
+                                }}
                                 title="Click on map to set"
                             >
                                 Map
@@ -347,22 +381,39 @@ export function SearchForm({
                 </div>
             )}
 
-            <div className="presets">
-                <p>Quick demo:</p>
-                {PRESETS.map((preset) => (
-                    <button
-                        key={preset.id}
-                        type="button"
-                        className="preset-btn"
-                        onClick={() => handlePreset(preset)}
-                        disabled={loading}
-                    >
-                        {preset.label}
-                    </button>
-                ))}
-            </div>
+            {isMobileExpanded && (
+                <div className="presets section">
+                    <p className="section-title">Quick demo:</p>
+                    {PRESETS.map((preset) => (
+                        <button
+                            key={preset.id}
+                            type="button"
+                            className="preset-btn"
+                            onClick={() => handlePreset(preset)}
+                            disabled={loading}
+                        >
+                            {preset.label}
+                        </button>
+                    ))}
+                </div>
+            )}
+
+            {!isMobileExpanded && (
+                <div className="presets section">
+                    <p className="section-title">Quick demo:</p>
+                    {PRESETS.map((preset) => (
+                        <button
+                            key={preset.id}
+                            type="button"
+                            className="preset-btn"
+                            onClick={() => handlePreset(preset)}
+                            disabled={loading}
+                        >
+                            {preset.label}
+                        </button>
+                    ))}
+                </div>
+            )}
         </div>
     );
 }
-
-
