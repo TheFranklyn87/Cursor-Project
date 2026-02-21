@@ -8,11 +8,11 @@ const VANCOUVER_CENTER = [49.28, -123.12];
 const SAFE_COLOR = '#22c55e'; // Green
 const MODERATE_COLOR = '#eab308'; // Yellow
 const DANGER_COLOR = '#ef4444'; // Red
-const NORMAL_COLOR = '#6b7280'; // Gray
+const UNSELECTED_PALETTE = ['#3b82f6', '#a855f7', '#fb923c', '#94a3b8']; // Blue, Purple, Orange, Gray
 
 function getSegmentColor(score) {
-    if (score >= 70) return SAFE_COLOR;
-    if (score >= 40) return MODERATE_COLOR;
+    if (score >= 60) return SAFE_COLOR;
+    if (score >= 30) return MODERATE_COLOR;
     return DANGER_COLOR;
 }
 
@@ -58,14 +58,15 @@ function RoutePolylines({ routes, selectedIndex }) {
             {routes.routes.map((route, rIdx) => {
                 const isSelected = rIdx === selectedIndex;
 
-                // If not selected, render as a single gray polyline for performance
+                // If not selected, render as a single colored polyline from palette
                 if (!isSelected) {
                     const coords = route.geometry?.coordinates?.map((c) => [c[1], c[0]]) || [];
+                    const color = UNSELECTED_PALETTE[rIdx % UNSELECTED_PALETTE.length];
                     return (
                         <Polyline
                             key={`route-${rIdx}`}
                             positions={coords}
-                            pathOptions={{ color: NORMAL_COLOR, weight: 3, opacity: 0.5 }}
+                            pathOptions={{ color, weight: 4, opacity: 0.6 }}
                         />
                     );
                 }

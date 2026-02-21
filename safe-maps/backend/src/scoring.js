@@ -154,7 +154,7 @@ export function scoreRoute(route, night = false) {
         ? scoredPoints.reduce((acc, p) => acc + p.localSafety, 0) / scoredPoints.length
         : 0;
 
-    const safetyScore = Math.round(Math.max(0, Math.min(100, 50 + avgSafety * 100)));
+    const safetyScore = Math.round(Math.max(0, Math.min(100, 60 + avgSafety * 120)));
 
     // Crime and lighting scores for breakdown (0-100)
     const avgCrimeNorm = scoredPoints.length > 0 ? totalNormCrime / scoredPoints.length : 0;
@@ -173,7 +173,7 @@ export function scoreRoute(route, night = false) {
         const p1 = scoredPoints[i];
         const p2 = scoredPoints[i + 1];
         const avgLocalSafety = (p1.localSafety + p2.localSafety) / 2;
-        const score = Math.round(Math.max(0, Math.min(100, 50 + avgLocalSafety * 100)));
+        const score = Math.round(Math.max(0, Math.min(100, 60 + avgLocalSafety * 120)));
         segments.push({
             coords: [[p1.lng, p1.lat], [p2.lng, p2.lat]],
             score

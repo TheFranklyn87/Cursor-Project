@@ -36,8 +36,9 @@ function AutocompleteInput({ label, value, onChange, placeholder, geocode, onSel
     };
 
     const handleSelect = (item) => {
-        onChange(item.displayName || item.display_name);
-        onSelect({ lat: item.lat, lng: item.lng });
+        const label = item.displayName || item.display_name;
+        onChange(label);
+        onSelect({ lat: item.lat, lng: item.lng, label });
         setSuggestions([]);
         setShowDropdown(false);
     };
@@ -91,20 +92,22 @@ export function SearchForm({
         if (fromText && !COORD_REGEX.test(fromText) && fromCoord && fromText !== fromCoord.label) {
             setFromCoord(null);
         }
-    }, [fromText]);
+    }, [fromText, fromCoord]);
 
     useEffect(() => {
         if (toText && !COORD_REGEX.test(toText) && toCoord && toText !== toCoord.label) {
             setToCoord(null);
         }
-    }, [toText]);
+    }, [toText, toCoord]);
 
     const handlePreset = (preset) => {
         setValidationError(null);
-        setFromText(preset.label.split(' → ')[0]);
-        setToText(preset.label.split(' → ')[1]);
-        setFromCoord(preset.from);
-        setToCoord(preset.to);
+        const fromLabel = preset.label.split(' → ')[0];
+        const toLabel = preset.label.split(' → ')[1];
+        setFromText(fromLabel);
+        setToText(toLabel);
+        setFromCoord({ ...preset.from, label: fromLabel });
+        setToCoord({ ...preset.to, label: toLabel });
         onSearch(preset.from, preset.to, night);
     };
 
