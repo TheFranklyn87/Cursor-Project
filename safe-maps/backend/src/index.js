@@ -5,7 +5,7 @@
 import express from 'express';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-import { handleRouteRequest } from './routes.js';
+import { handleRouteRequest, handleGeocodeRequest } from './routes.js';
 import cors from 'cors';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -16,6 +16,7 @@ app.use(cors());
 app.use(express.json());
 
 app.get('/api/route', handleRouteRequest);
+app.get('/api/geocode', handleGeocodeRequest);
 
 app.get('/', (req, res) => {
     res.json({

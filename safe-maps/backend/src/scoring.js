@@ -2,7 +2,7 @@
  * Safety scoring engine - scores route segments using crime grid and lighting data
  */
 
-import { readFileSync } from 'fs';
+import { readFileSync, existsSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 
@@ -13,6 +13,7 @@ let crimeGrid = null;
 let lightingData = null;
 let maxCrime = 0;
 let maxLights = 0;
+let dataUnavailable = false;
 
 const GRID_SIZE = 0.001;
 const SAMPLE_INTERVAL_M = 50;
@@ -20,22 +21,40 @@ const LIGHT_RADIUS_M = 75;
 const M_TO_DEG_approx = 1 / 111320; // at Vancouver latitude
 
 function loadData() {
-  if (!crimeGrid) {
-    const raw = readFileSync(join(DATA_DIR, 'crime-grid.json'), 'utf8');
-    const parsed = JSON.parse(raw);
-    crimeGrid = parsed.grid;
-    maxCrime = Math.max(...Object.values(crimeGrid), 1);
-  }
-  if (!lightingData) {
-    const raw = readFileSync(join(DATA_DIR, 'lighting.json'), 'utf8');
-    lightingData = JSON.parse(raw);
-    const poles = lightingData.poles || [];
-    const grid = lightingData.grid || {};
-    maxLights = Math.max(...Object.values(grid), 1);
-    if (maxLights === 1 && poles.length > 0) {
-      const gridVals = Object.values(grid);
-      maxLights = gridVals.length ? Math.max(...gridVals) : 1;
+  if (dataUnavailable) return;
+  try {
+    if (!crimeGrid) {
+      const crimePath = join(DATA_DIR, 'crime-grid.json');
+      if (!existsSync(crimePath)) {
+        console.warn('crime-grid.json not found. Run: node scripts/fetch-crime.js');
+        dataUnavailable = true;
+        return;
+      }
+      const raw = readFileSync(crimePath, 'utf8');
+      const parsed = JSON.parse(raw);
+      crimeGrid = parsed.grid;
+      maxCrime = Math.max(...Object.values(crimeGrid), 1);
     }
+    if (!lightingData) {
+      const lightingPath = join(DATA_DIR, 'lighting.json');
+      if (!existsSync(lightingPath)) {
+        console.warn('lighting.json not found. Run: node scripts/fetch-lighting.js');
+        dataUnavailable = true;
+        return;
+      }
+      const raw = readFileSync(lightingPath, 'utf8');
+      lightingData = JSON.parse(raw);
+      const poles = lightingData.poles || [];
+      const grid = lightingData.grid || {};
+      maxLights = Math.max(...Object.values(grid), 1);
+      if (maxLights === 1 && poles.length > 0) {
+        const gridVals = Object.values(grid);
+        maxLights = gridVals.length ? Math.max(...gridVals) : 1;
+      }
+    }
+  } catch (err) {
+    console.warn('Could not load safety data:', err.message);
+    dataUnavailable = true;
   }
 }
 
@@ -104,21 +123,31 @@ function getLightingAtFromGrid(lat, lng) {
 export function scoreRoute(route, night = false) {
   loadData();
   const coords = route.geometry?.coordinates || [];
-  if (coords.length < 2) return { safetyScore: 50 };
+  if (coords.length < 2 || dataUnavailable || !crimeGrid || !lightingData) {
+    return { safetyScore: 50, crimeScore: null, lightingScore: null };
+  }
 
   const points = samplePointsAlongRoute(coords);
   const lightingWeight = night ? 0.5 : 0.1;
   const crimeWeight = night ? 0.5 : 0.9;
 
   let totalSafety = 0;
+  let totalCrime = 0;
+  let totalLights = 0;
   for (const [lat, lng] of points) {
     const crime = getCrimeAt(lat, lng);
     const lights = getLightingAtFromGrid(lat, lng);
+    totalCrime += crime;
+    totalLights += lights;
     const normLights = maxLights > 0 ? lights / maxLights : 0;
     const normCrime = maxCrime > 0 ? crime / maxCrime : 0;
     totalSafety += lightingWeight * normLights - crimeWeight * normCrime;
   }
   const avgSafety = points.length > 0 ? totalSafety / points.length : 0;
   const safetyScore = Math.round(Math.max(0, Math.min(100, 50 + avgSafety * 50)));
-  return { safetyScore };
+  const avgCrime = points.length > 0 ? totalCrime / points.length : 0;
+  const avgLights = points.length > 0 ? totalLights / points.length : 0;
+  const crimeScore = maxCrime > 0 ? Math.round((1 - Math.min(1, avgCrime / maxCrime)) * 100) : 50;
+  const lightingScore = Math.round(Math.min(100, (avgLights / 5) * 100));
+  return { safetyScore, crimeScore, lightingScore };
 }

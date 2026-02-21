@@ -1,8 +1,11 @@
 /**
  * Route API - GET /api/route?from=lat,lng&to=lat,lng&night=true|false
+ * Geocode API - GET /api/geocode?q=address
  */
 
 import { getRoutes } from './osrm.js';
+import { geocode } from './geocode.js';
+import * as cache from './cache.js';
 import { scoreRoute } from './scoring.js';
 
 function parseCoord(param) {
@@ -23,18 +26,26 @@ export async function handleRouteRequest(req, res) {
   }
 
   try {
-    let osmRoutes = await getRoutes(from.lat, from.lng, to.lat, to.lng);
+    let osmRoutes = cache.get(from.lat, from.lng, to.lat, to.lng);
+    if (!osmRoutes) {
+      osmRoutes = await getRoutes(from.lat, from.lng, to.lat, to.lng);
+      if (osmRoutes?.length) {
+        cache.set(from.lat, from.lng, to.lat, to.lng, osmRoutes);
+      }
+    }
     if (!osmRoutes || osmRoutes.length === 0) {
       return res.status(404).json({ error: 'No route found' });
     }
 
     const scored = osmRoutes.map((r) => {
-      const { safetyScore } = scoreRoute(r, night);
+      const { safetyScore, crimeScore, lightingScore } = scoreRoute(r, night);
       return {
         geometry: r.geometry,
         duration: Math.round(r.duration),
         distance: Math.round(r.distance),
         safetyScore,
+        crimeScore: crimeScore ?? 50,
+        lightingScore: lightingScore ?? 50,
       };
     });
 
@@ -56,5 +67,22 @@ export async function handleRouteRequest(req, res) {
     res.status(500).json({
       error: err.message || 'Routing failed',
     });
+  }
+}
+
+export async function handleGeocodeRequest(req, res) {
+  const q = req.query.q;
+  if (!q || typeof q !== 'string') {
+    return res.status(400).json({ error: 'Missing q parameter' });
+  }
+  try {
+    const result = await geocode(q);
+    if (!result) {
+      return res.status(404).json({ error: 'Address not found' });
+    }
+    res.json(result);
+  } catch (err) {
+    console.error('Geocode error:', err);
+    res.status(500).json({ error: err.message || 'Geocoding failed' });
   }
 }

@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { MapContainer, TileLayer, Polyline, Marker, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Polyline, Marker, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 
 import 'leaflet/dist/leaflet.css';
@@ -7,6 +7,18 @@ import 'leaflet/dist/leaflet.css';
 const VANCOUVER_CENTER = [49.28, -123.12];
 const SAFE_COLOR = '#22c55e';
 const NORMAL_COLOR = '#6b7280';
+
+function MapClickHandler({ clickMode, onMapClick }) {
+  useMapEvents({
+    click(e) {
+      if (clickMode && onMapClick) {
+        const { lat, lng } = e.latlng;
+        onMapClick(lat, lng);
+      }
+    },
+  });
+  return null;
+}
 
 function MapUpdater({ routes, from, to }) {
   const map = useMap();
@@ -61,9 +73,14 @@ const pinIconTo = L.divIcon({
   iconAnchor: [12, 24],
 });
 
-export function MapView({ routes, selectedIndex, from, to }) {
+export function MapView({ routes, selectedIndex, from, to, clickMode, onMapClick }) {
   return (
     <div className="map-container">
+      {clickMode && (
+        <div className="map-click-hint">
+          Click on map to set {clickMode === 'from' ? 'origin' : 'destination'}
+        </div>
+      )}
       <MapContainer
         center={VANCOUVER_CENTER}
         zoom={14}
@@ -74,6 +91,7 @@ export function MapView({ routes, selectedIndex, from, to }) {
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
+        <MapClickHandler clickMode={clickMode} onMapClick={onMapClick} />
         <MapUpdater routes={routes} from={from} to={to} />
         <RoutePolylines routes={routes} selectedIndex={selectedIndex} />
         {from && <Marker position={[from.lat, from.lng]} icon={pinIcon} />}
