@@ -1,8 +1,11 @@
 /**
  * Route API - GET /api/route?from=lat,lng&to=lat,lng&night=true|false
+ * Geocode API - GET /api/geocode?q=address
  */
 
 import { getRoutes } from './osrm.js';
+import { geocode } from './geocode.js';
+import * as cache from './cache.js';
 import { scoreRoute } from './scoring.js';
 
 function parseCoord(param) {
@@ -23,18 +26,26 @@ export async function handleRouteRequest(req, res) {
     }
 
     try {
-        let osmRoutes = await getRoutes(from.lat, from.lng, to.lat, to.lng);
+        let osmRoutes = cache.get(from.lat, from.lng, to.lat, to.lng);
+        if (!osmRoutes) {
+            osmRoutes = await getRoutes(from.lat, from.lng, to.lat, to.lng);
+            if (osmRoutes?.length) {
+                cache.set(from.lat, from.lng, to.lat, to.lng, osmRoutes);
+            }
+        }
         if (!osmRoutes || osmRoutes.length === 0) {
             return res.status(404).json({ error: 'No route found' });
         }
 
         const scored = osmRoutes.map((r) => {
-            const { safetyScore, segments, dangerPoints } = scoreRoute(r, night);
+            const { safetyScore, crimeScore, lightingScore, segments, dangerPoints } = scoreRoute(r, night);
             return {
                 geometry: r.geometry,
                 duration: Math.round(r.duration),
                 distance: Math.round(r.distance),
                 safetyScore,
+                crimeScore: crimeScore ?? 50,
+                lightingScore: lightingScore ?? 50,
                 segments,
                 dangerPoints,
             };
@@ -60,28 +71,23 @@ export async function handleRouteRequest(req, res) {
         });
     }
 }
-const VANCOUVER_BBOX = '-123.27,49.19,-123.01,49.32';
 
-export async function handleGeocode(req, res) {
-    const { q } = req.query;
-    if (!q) return res.status(400).json({ error: 'Missing query' });
-
+export async function handleGeocodeRequest(req, res) {
+    const q = req.query.q;
+    if (!q || typeof q !== 'string') {
+        return res.status(400).json({ error: 'Missing q parameter' });
+    }
     try {
-        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&viewbox=${VANCOUVER_BBOX}&bounded=1&limit=5`;
-        const response = await fetch(url, {
-            headers: { 'User-Agent': 'Safe-Maps-Vancouver/1.0' }
-        });
-        const data = await response.json();
-
-        const suggestions = data.map(item => ({
-            display_name: item.display_name,
-            lat: parseFloat(item.lat),
-            lng: parseFloat(item.lon)
-        }));
-
-        res.json(suggestions);
+        const result = await geocode(q);
+        if (!result) {
+            return res.status(404).json({ error: 'Address not found' });
+        }
+        // Handle both single result and array of results if needed
+        // The suggest endpoint in frontend expects an array
+        res.json(Array.isArray(result) ? result : [result]);
     } catch (err) {
         console.error('Geocode error:', err);
-        res.status(500).json({ error: 'Geocoding failed' });
+        res.status(500).json({ error: err.message || 'Geocoding failed' });
     }
 }
+

@@ -5,11 +5,15 @@
     "description": "Find the safest walking route in Vancouver",
     "scripts": {
         "build-data": "cd backend && npm run build-data",
+        "dev": "concurrently \"npm run backend\" \"npm run frontend\"",
         "docker:dev": "docker compose -f docker-compose.yml -f docker-compose.dev.yml up",
         "docker:prod": "docker compose up --build",
         "docker:build": "docker compose build",
         "backend": "cd backend && npm start",
         "frontend": "cd frontend && npm run dev",
         "install:all": "cd backend && npm install && cd ../frontend && npm install"
+    },
+    "devDependencies": {
+        "concurrently": "^8.2.2"
     }
 }

@@ -2,7 +2,7 @@
  * Safety scoring engine - scores route segments using crime grid and lighting data
  */
 
-import { readFileSync } from 'fs';
+import { readFileSync, existsSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 
@@ -13,6 +13,7 @@ let crimeGrid = null;
 let lightingData = null;
 let maxCrime = 0;
 let maxLights = 0;
+let dataUnavailable = false;
 
 const GRID_SIZE = 0.001;
 const SAMPLE_INTERVAL_M = 50;
@@ -20,22 +21,40 @@ const LIGHT_RADIUS_M = 75;
 const M_TO_DEG_approx = 1 / 111320; // at Vancouver latitude
 
 function loadData() {
-    if (!crimeGrid) {
-        const raw = readFileSync(join(DATA_DIR, 'crime-grid.json'), 'utf8');
-        const parsed = JSON.parse(raw);
-        crimeGrid = parsed.grid;
-        maxCrime = Math.max(...Object.values(crimeGrid), 1);
-    }
-    if (!lightingData) {
-        const raw = readFileSync(join(DATA_DIR, 'lighting.json'), 'utf8');
-        lightingData = JSON.parse(raw);
-        const poles = lightingData.poles || [];
-        const grid = lightingData.grid || {};
-        maxLights = Math.max(...Object.values(grid), 1);
-        if (maxLights === 1 && poles.length > 0) {
-            const gridVals = Object.values(grid);
-            maxLights = gridVals.length ? Math.max(...gridVals) : 1;
+    if (dataUnavailable) return;
+    try {
+        if (!crimeGrid) {
+            const crimePath = join(DATA_DIR, 'crime-grid.json');
+            if (!existsSync(crimePath)) {
+                console.warn('crime-grid.json not found. Run: node scripts/fetch-crime.js');
+                dataUnavailable = true;
+                return;
+            }
+            const raw = readFileSync(crimePath, 'utf8');
+            const parsed = JSON.parse(raw);
+            crimeGrid = parsed.grid;
+            maxCrime = Math.max(...Object.values(crimeGrid), 1);
         }
+        if (!lightingData) {
+            const lightingPath = join(DATA_DIR, 'lighting.json');
+            if (!existsSync(lightingPath)) {
+                console.warn('lighting.json not found. Run: node scripts/fetch-lighting.js');
+                dataUnavailable = true;
+                return;
+            }
+            const raw = readFileSync(lightingPath, 'utf8');
+            lightingData = JSON.parse(raw);
+            const poles = lightingData.poles || [];
+            const grid = lightingData.grid || {};
+            maxLights = Math.max(...Object.values(grid), 1);
+            if (maxLights === 1 && poles.length > 0) {
+                const gridVals = Object.values(grid);
+                maxLights = gridVals.length ? Math.max(...gridVals) : 1;
+            }
+        }
+    } catch (err) {
+        console.warn('Could not load safety data:', err.message);
+        dataUnavailable = true;
     }
 }
 
@@ -104,7 +123,9 @@ function getLightingAtFromGrid(lat, lng) {
 export function scoreRoute(route, night = false) {
     loadData();
     const coords = route.geometry?.coordinates || [];
-    if (coords.length < 2) return { safetyScore: 50 };
+    if (coords.length < 2 || dataUnavailable || !crimeGrid || !lightingData) {
+        return { safetyScore: 50, crimeScore: 50, lightingScore: 50, segments: [], dangerPoints: [] };
+    }
 
     const points = samplePointsAlongRoute(coords);
     const lightingWeight = night ? 0.5 : 0.1;
@@ -113,11 +134,18 @@ export function scoreRoute(route, night = false) {
     const logMaxCrime = Math.log1p(maxCrime);
     const logMaxLights = Math.log1p(maxLights);
 
+    let totalNormCrime = 0;
+    let totalNormLights = 0;
+
     const scoredPoints = points.map(([lat, lng]) => {
         const crime = getCrimeAt(lat, lng);
         const lights = getLightingAtFromGrid(lat, lng);
         const normLights = logMaxLights > 0 ? Math.log1p(lights) / logMaxLights : 0;
         const normCrime = logMaxCrime > 0 ? Math.log1p(crime) / logMaxCrime : 0;
+
+        totalNormCrime += normCrime;
+        totalNormLights += normLights;
+
         const localSafety = (lightingWeight * normLights) - (crimeWeight * normCrime);
         return { lat, lng, localSafety, crime: normCrime };
     });
@@ -128,8 +156,13 @@ export function scoreRoute(route, night = false) {
 
     const safetyScore = Math.round(Math.max(0, Math.min(100, 50 + avgSafety * 100)));
 
+    // Crime and lighting scores for breakdown (0-100)
+    const avgCrimeNorm = scoredPoints.length > 0 ? totalNormCrime / scoredPoints.length : 0;
+    const avgLightsNorm = scoredPoints.length > 0 ? totalNormLights / scoredPoints.length : 0;
+    const crimeScore = Math.round((1 - avgCrimeNorm) * 100);
+    const lightingScore = Math.round(avgLightsNorm * 100);
+
     // Identify danger points (hotspots)
-    // Threshold: more than 0.4 (40%) of log-max crime is a warning
     const dangerPoints = scoredPoints
         .filter(p => p.crime > 0.4)
         .map(p => ({ lat: p.lat, lng: p.lng, intensity: p.crime }));
@@ -139,7 +172,6 @@ export function scoreRoute(route, night = false) {
     for (let i = 0; i < scoredPoints.length - 1; i++) {
         const p1 = scoredPoints[i];
         const p2 = scoredPoints[i + 1];
-        // Average the local safety of the two endpoints for the segment score
         const avgLocalSafety = (p1.localSafety + p2.localSafety) / 2;
         const score = Math.round(Math.max(0, Math.min(100, 50 + avgLocalSafety * 100)));
         segments.push({
@@ -148,5 +180,6 @@ export function scoreRoute(route, night = false) {
         });
     }
 
-    return { safetyScore, segments, dangerPoints };
+    return { safetyScore, crimeScore, lightingScore, segments, dangerPoints };
 }
+
