@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { MapContainer, TileLayer, Polyline, useMap, useMapEvents, CircleMarker, Tooltip } from 'react-leaflet';
+import { SOSButton } from './SOSButton';
 
 import 'leaflet/dist/leaflet.css';
 
@@ -195,6 +196,7 @@ export function MapView({ routes, selectedIndex, from, to, clickMode, onMapClick
                 <div className="legend-item"><span className="color-box danger"></span> Dangerous</div>
                 <div className="legend-item">⚠️ Danger Hotspot</div>
             </div>
+            <SOSButton />
         </div>
     );
 }
