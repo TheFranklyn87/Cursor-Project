@@ -18,30 +18,49 @@
 
 ### 1. Install dependencies
 
+From the project root:
+
 ```bash
 cd safe-maps
 npm install
-cd server && npm install && cd ..
-cd client && npm install && cd ..
+npm run install:all
+```
+
+Or install backend and frontend separately:
+
+```bash
+cd safe-maps/backend && npm install && cd ..
+cd safe-maps/frontend && npm install && cd ..
 ```
 
 ### 2. Build data (one-time)
 
+From the `safe-maps` directory:
+
 ```bash
-node scripts/fetch-crime.js   # Uses demo grid if no CSV; place VPD CSVs in data/crime/ for real data
-node scripts/fetch-lighting.js # Fetches street lighting from Vancouver Open Data
+cd backend && node scripts/fetch-crime.js    # Uses demo grid if no CSV; place VPD CSVs in backend/data/crime/ for real data
+node scripts/fetch-lighting.js               # Fetches street lighting from Vancouver Open Data
+cd ..
 ```
 
 ### 3. Run the app
 
-**Terminal 1 — API server:**
+**Option A — One terminal (recommended):**
 ```bash
-cd server && npm start
+cd safe-maps
+npm run dev
 ```
 
-**Terminal 2 — Frontend:**
+**Option B — Two terminals:**
+
+*Terminal 1 — API server:*
 ```bash
-cd client && npm run dev
+cd safe-maps && npm run backend
+```
+
+*Terminal 2 — Frontend:*
+```bash
+cd safe-maps && npm run frontend
 ```
 
 Open [http://localhost:5173](http://localhost:5173)
@@ -59,7 +78,7 @@ Or enter coordinates (lat, lng) manually.
 
 | Data | Source |
 |------|--------|
-| Crime | [VPD GeoDASH](https://geodash.vpd.ca/opendata/) — Download CSV by year/neighbourhood, place in `data/crime/` |
+| Crime | [VPD GeoDASH](https://geodash.vpd.ca/opendata/) — Download CSV by year/neighbourhood, place in `safe-maps/backend/data/crime/` |
 | Street lighting | [Vancouver Open Data](https://opendata.vancouver.ca/explore/dataset/street-lighting-poles/) |
 | Routing | [OSRM](https://router.project-osrm.org/) (foot/walking profile) |
 
@@ -67,10 +86,11 @@ Or enter coordinates (lat, lng) manually.
 
 ```
 safe-maps/
-├── client/         # React + Vite + Leaflet frontend
-├── server/         # Express API (routing, scoring)
-├── scripts/        # Data pipeline (crime, lighting)
-├── data/           # Raw data (gitignored CSVs)
+├── frontend/       # React + Vite + Leaflet frontend
+├── backend/        # Express API (routing, scoring)
+│   ├── scripts/    # Data pipeline (crime, lighting)
+│   └── data/       # Raw data (gitignored CSVs)
+├── package.json    # Root scripts (install:all, dev, backend, frontend)
 └── README.md
 ```
 
