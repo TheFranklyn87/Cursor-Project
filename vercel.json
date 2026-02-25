@@ -1,0 +1,8 @@
+{
+  "buildCommand": "cd safe-maps/frontend && npm install && npm run build",
+  "outputDirectory": "safe-maps/frontend/dist",
+  "installCommand": "echo 'skip root install'",
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}
