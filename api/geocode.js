@@ -1,7 +1,7 @@
 /**
  * Vercel Serverless Function: GET /api/geocode
- * Consolidated from backend/src/geocode.js
  */
+'use strict';
 
 const NOMINATIM_URL = 'https://nominatim.openstreetmap.org/search';
 const USER_AGENT = 'SafeMaps Vancouver/1.0';
@@ -27,7 +27,7 @@ async function nominatim(q) {
     return data.map((item) => ({ lat: parseFloat(item.lat), lng: parseFloat(item.lon), displayName: item.display_name }));
 }
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Origin', '*');
     const q = req.query.q;
     if (!q || typeof q !== 'string' || q.trim().length < 3) {
@@ -38,7 +38,6 @@ export default async function handler(req, res) {
         const trimmed = q.trim();
         let results = await nominatim(normalizeQuery(trimmed));
 
-        // Fallback: strip leading street number
         if (results.length === 0) {
             const withoutNumber = trimmed.replace(/^\d+\s+/, '').trim();
             if (withoutNumber.length >= 3 && withoutNumber !== trimmed) {
@@ -52,4 +51,4 @@ export default async function handler(req, res) {
         console.error('Geocode error:', err);
         res.status(500).json({ error: err.message || 'Geocoding failed' });
     }
-}
+};
