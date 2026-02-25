@@ -2,10 +2,18 @@
     "buildCommand": "cd frontend && npm install && npm run build",
     "outputDirectory": "frontend/dist",
     "installCommand": "echo 'skip root install'",
-    "rewrites": [
+    "routes": [
         {
-            "source": "/(.*)",
-            "destination": "/index.html"
+            "src": "/api/route(.*)",
+            "dest": "/api/route.js"
+        },
+        {
+            "src": "/api/geocode(.*)",
+            "dest": "/api/geocode.js"
+        },
+        {
+            "src": "/(.*)",
+            "dest": "/index.html"
         }
     ]
 }
