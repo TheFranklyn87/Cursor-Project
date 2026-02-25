@@ -3,8 +3,8 @@
  */
 'use strict';
 
-const { readFileSync, existsSync } = require('fs');
-const { join } = require('path');
+
+
 
 // ── OSRM ─────────────────────────────────────────────────────────────────────
 const OSRM_BASE = 'https://router.project-osrm.org/route/v1/foot';
@@ -63,7 +63,6 @@ function cacheSet(a, b, c, d, data) {
 }
 
 // ── Scoring ───────────────────────────────────────────────────────────────────
-const DATA_DIR = join(process.cwd(), 'backend', 'src', 'data');
 const GRID_SIZE = 0.001;
 const SAMPLE_INTERVAL_M = 50;
 const LIGHT_RADIUS_M = 75;
@@ -75,18 +74,15 @@ function loadData() {
     if (dataUnavailable || (crimeGrid && lightingData)) return;
     try {
         if (!crimeGrid) {
-            const p = join(DATA_DIR, 'crime-grid.json');
-            if (!existsSync(p)) { dataUnavailable = true; return; }
-            const parsed = JSON.parse(readFileSync(p, 'utf8'));
+            // require() ensures these are bundled in the Vercel function
+            const parsed = require('../backend/src/data/crime-grid.json');
             crimeGrid = parsed.grid;
-            maxCrime = Math.max(...Object.values(crimeGrid), 1);
+            maxCrime = Math.max(...Object.values(crimeGrid) || [1], 1);
         }
         if (!lightingData) {
-            const p = join(DATA_DIR, 'lighting.json');
-            if (!existsSync(p)) { dataUnavailable = true; return; }
-            lightingData = JSON.parse(readFileSync(p, 'utf8'));
+            lightingData = require('../backend/src/data/lighting.json');
             const grid = lightingData.grid || {};
-            maxLights = Math.max(...Object.values(grid), 1);
+            maxLights = Math.max(...Object.values(grid) || [1], 1);
         }
     } catch (err) {
         console.warn('Could not load safety data:', err.message);
